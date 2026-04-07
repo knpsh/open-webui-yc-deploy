@@ -51,12 +51,18 @@ def _get_s3_client():
 
 
 def _upload_to_s3(file_bytes: bytes, filename: str) -> tuple[str, str]:
-    """Upload audio to S3, return (key, uri)."""
+    """Upload audio to S3, return (key, presigned_uri)."""
     s3 = _get_s3_client()
     key = f"stt-temp/{uuid.uuid4()}/{filename}"
     s3.put_object(Bucket=S3_BUCKET, Key=key, Body=file_bytes)
-    uri = f"{S3_ENDPOINT}/{S3_BUCKET}/{key}"
-    logger.info(f"Uploaded to S3: {uri}")
+
+    # Generate presigned URL so SpeechKit can access the file
+    uri = s3.generate_presigned_url(
+        "get_object",
+        Params={"Bucket": S3_BUCKET, "Key": key},
+        ExpiresIn=3600,
+    )
+    logger.info(f"Uploaded to S3: {key}, presigned URL generated")
     return key, uri
 
 
