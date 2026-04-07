@@ -17,7 +17,7 @@ services:
     environment:
       - FOLDER_ID=<FOLDER_ID>
       - API_KEY=<API_KEY>
-      - S3_BUCKET=<BUCKET>
+      - S3_BUCKET=<S3_BUCKET>
       - S3_ACCESS_KEY=<S3_ACCESS_KEY>
       - S3_SECRET_KEY=<S3_SECRET_KEY>
 

@@ -29,7 +29,7 @@ This repository contains the code allowing to run open-webui with Yandex Models,
 
 - `<FOLDER_ID>` - folder id where roles for a service account were assigned;
 - `<API_KEY>`
-- `<BUCKET>`
+- `<S3_BUCKET>`
 - `<S3_ACCESS_KEY>`
 - `<S3_SECRET_KEY>`
 
