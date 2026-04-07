@@ -1,0 +1,48 @@
+version: "3.8"
+
+services:
+  yandex-proxy:
+    build: ./proxy
+    container_name: yandex-proxy
+    restart: always
+    ports:
+      - "8081:8081"
+
+  stt-proxy:
+    build: ./stt-proxy
+    container_name: stt-proxy
+    restart: always
+    ports:
+      - "8082:8082"
+    environment:
+      - FOLDER_ID=<FOLDER_ID>
+      - API_KEY=<API_KEY>
+      - S3_BUCKET=open-webui-audio-recognize
+      - S3_ACCESS_KEY=<S3_ACCESS_KEY>
+      - S3_SECRET_KEY=<S3_SECRET_KEY>
+
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: open-webui
+    restart: always
+    ports:
+      - "3000:8080"
+    volumes:
+      - open-webui:/app/backend/data
+    environment:
+      - ENABLE_OLLAMA_API=False
+      - OPENAI_API_BASE_URL=http://yandex-proxy:8081/v1
+      - OPENAI_API_KEY=<API_KEY>
+      - IMAGES_OPENAI_API_BASE_URL=http://yandex-proxy:8081/v1
+      - IMAGES_OPENAI_API_KEY=<API_KEY>
+      - AUDIO_STT_ENGINE=openai
+      - AUDIO_STT_OPENAI_API_BASE_URL=http://stt-proxy:8082/v1
+      - AUDIO_STT_OPENAI_API_KEY=unused
+      - ENABLE_IMAGE_GENERATION=True
+      - IMAGE_GENERATION_ENGINE=openai
+    depends_on:
+      - yandex-proxy
+      - stt-proxy
+
+volumes:
+  open-webui:
