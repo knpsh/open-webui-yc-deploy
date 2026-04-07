@@ -1,6 +1,6 @@
 # open-webui-yc-deploy
 
-This repository contains the code allowing to run open-webui with Yandex Models, including YandexART (image generation) through a proxy and SpeechKit Recognition (speech-to-text through a proxy).
+This repository contains the code allowing to run open-webui with Yandex Cloud models, including YandexART (image generation) through a proxy and SpeechKit Recognition (speech-to-text) through a proxy.
 
 1. Create a service account: https://yandex.cloud/en/docs/iam/operations/sa/create
 
