@@ -88,6 +88,8 @@ async def _generate_image(api_key: str, prompt: str, size: str = "1024x1024") ->
 
     async with httpx.AsyncClient(timeout=120) as client:
         resp = await client.post(YANDEX_ART_URL, json=payload, headers=headers)
+        logger.info(f"YandexART request payload: {payload}")
+        logger.info(f"YandexART response: {resp.status_code} {resp.text}")
         resp.raise_for_status()
         operation = resp.json()
         operation_id = operation["id"]
@@ -144,7 +146,7 @@ async def images_generations(request: Request):
 )
 async def proxy_passthrough(request: Request, path: str):
     """Pass through all other requests to Yandex Cloud OpenAI-compatible API."""
-    target_url = f"{YANDEX_OPENAI_BASE}/{path}"
+    target_url = f"{YANDEX_BASE_URL}/{path}"
 
     headers = dict(request.headers)
     headers.pop("host", None)
