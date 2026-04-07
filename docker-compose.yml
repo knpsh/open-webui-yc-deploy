@@ -38,6 +38,8 @@ services:
       - AUDIO_STT_ENGINE=openai
       - AUDIO_STT_OPENAI_API_BASE_URL=http://stt-proxy:8082/v1
       - AUDIO_STT_OPENAI_API_KEY=unused
+      - ENABLE_IMAGE_GENERATION=True
+      - IMAGE_GENERATION_ENGINE=openai
     depends_on:
       - yandex-proxy
       - stt-proxy
