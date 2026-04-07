@@ -18,3 +18,8 @@ To enable image generation in Open WebUI (http://localhost:3000):
 YandexART docs: https://aistudio.yandex.ru/docs/ru/ai-studio/operations/generation/yandexart-request.html?tabs=programming_language_curl
 
   
+--- 
+S3 credentials:
+bucket: open-webui-audio-recognize
+key: YCAJEp5QYk-2bhUK9VGVEnjZH
+secret: YCMGjtjnQJFHC8PVDL8555sGm4hEXKM47JEPQuFY
