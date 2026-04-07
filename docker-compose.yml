@@ -15,11 +15,11 @@ services:
     ports:
       - "8082:8082"
     environment:
-      - FOLDER_ID=b1g7jgrmmcumg8459456
-      - API_KEY=AQVNxWCC3dGAX7366WSeKwtXCNdW5JV-G6xwEWJl
+      - FOLDER_ID=<FOLDER_ID>
+      - API_KEY=<API_KEY>
       - S3_BUCKET=open-webui-audio-recognize
-      - S3_ACCESS_KEY=YCAJEp5QYk-2bhUK9VGVEnjZH
-      - S3_SECRET_KEY=YCMGjtjnQJFHC8PVDL8555sGm4hEXKM47JEPQuFY
+      - S3_ACCESS_KEY=<S3_ACCESS_KEY>
+      - S3_SECRET_KEY=<S3_SECRET_KEY>
 
   open-webui:
     image: ghcr.io/open-webui/open-webui:main
@@ -32,9 +32,9 @@ services:
     environment:
       - ENABLE_OLLAMA_API=False
       - OPENAI_API_BASE_URL=http://yandex-proxy:8081/v1
-      - OPENAI_API_KEY=AQVNxWCC3dGAX7366WSeKwtXCNdW5JV-G6xwEWJl
+      - OPENAI_API_KEY=<API_KEY>
       - IMAGES_OPENAI_API_BASE_URL=http://yandex-proxy:8081/v1
-      - IMAGES_OPENAI_API_KEY=AQVNxWCC3dGAX7366WSeKwtXCNdW5JV-G6xwEWJl
+      - IMAGES_OPENAI_API_KEY=<API_KEY>
       - AUDIO_STT_ENGINE=openai
       - AUDIO_STT_OPENAI_API_BASE_URL=http://stt-proxy:8082/v1
       - AUDIO_STT_OPENAI_API_KEY=unused

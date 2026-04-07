@@ -17,7 +17,6 @@ YANDEX_OPENAI_BASE = f"{YANDEX_BASE_URL}/v1"
 YANDEX_ART_URL = f"{YANDEX_BASE_URL}/foundationModels/v1/imageGenerationAsync"
 YANDEX_OPERATION_URL = "https://operation.api.cloud.yandex.net/operations"
 
-# Cached folder_id extracted from /v1/models
 _folder_id: Optional[str] = None
 
 
@@ -69,7 +68,6 @@ async def _generate_image(api_key: str, prompt: str, size: str = "1024x1024") ->
     width = str(w // divisor)
     height = str(h // divisor)
 
-    # YandexART has a 500 character prompt limit
     if len(prompt) > 500:
         prompt = prompt[:497] + "..."
         logger.warning("Prompt truncated to 500 characters")
