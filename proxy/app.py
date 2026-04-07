@@ -62,7 +62,17 @@ async def _generate_image(api_key: str, prompt: str, size: str = "1024x1024") ->
     folder_id = await _get_folder_id(api_key)
     model_uri = f"art://{folder_id}/yandex-art/latest"
 
-    width, height = size.split("x") if "x" in size else ("1024", "1024")
+    from math import gcd
+    w_str, h_str = size.split("x") if "x" in size else ("1024", "1024")
+    w, h = int(w_str), int(h_str)
+    divisor = gcd(w, h)
+    width = str(w // divisor)
+    height = str(h // divisor)
+
+    # YandexART has a 500 character prompt limit
+    if len(prompt) > 500:
+        prompt = prompt[:497] + "..."
+        logger.warning("Prompt truncated to 500 characters")
 
     payload = {
         "modelUri": model_uri,
