@@ -1,0 +1,29 @@
+version: "3.8"
+
+services:
+  yandex-proxy:
+    build: ./proxy
+    container_name: yandex-proxy
+    restart: always
+    ports:
+      - "8081:8081"
+
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: open-webui
+    restart: always
+    ports:
+      - "3000:8080"
+    volumes:
+      - open-webui:/app/backend/data
+    environment:
+      - ENABLE_OLLAMA_API=False
+      - OPENAI_API_BASE_URL=http://yandex-proxy:8081/v1
+      - OPENAI_API_KEY=AQVNx2RrvxUcrYCy_MSusS2ltrebhBVHYkqxF8mG
+      - IMAGES_OPENAI_API_BASE_URL=http://yandex-proxy:8081/v1
+      - IMAGES_OPENAI_API_KEY=AQVNx2RrvxUcrYCy_MSusS2ltrebhBVHYkqxF8mG
+    depends_on:
+      - yandex-proxy
+
+volumes:
+  open-webui:
