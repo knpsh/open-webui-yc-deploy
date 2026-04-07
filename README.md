@@ -19,11 +19,11 @@ This repository contains the code allowing to run open-webui with Yandex Models,
 
 5. Create an API ket for the service account: https://yandex.cloud/en/docs/iam/operations/authentication/manage-api-keys#create-api-key
 
-- yc.ai.speechkitTts.execute
-- yc.ai.speechkitStt.execute
-- yc.ai.imageGeneration.execute
-- yc.ai.foundationModels.execute
-- yc.ai.languageModels.execute
+- `yc.ai.speechkitTts.execute`
+- `yc.ai.speechkitStt.execute`
+- `yc.ai.imageGeneration.execute`
+- `yc.ai.foundationModels.execute`
+- `yc.ai.languageModels.execute`
 
 6. Fill the `docker-compose.yaml` file with:
 
