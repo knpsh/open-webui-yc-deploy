@@ -8,6 +8,19 @@ services:
     ports:
       - "8081:8081"
 
+  stt-proxy:
+    build: ./stt-proxy
+    container_name: stt-proxy
+    restart: always
+    ports:
+      - "8082:8082"
+    environment:
+      - FOLDER_ID=b1g7jgrmmcumg8459456
+      - API_KEY=AQVNx2RrvxUcrYCy_MSusS2ltrebhBVHYkqxF8mG
+      - S3_BUCKET=open-webui-audio-recognize
+      - S3_ACCESS_KEY=YCAJEp5QYk-2bhUK9VGVEnjZH
+      - S3_SECRET_KEY=YCMGjtjnQJFHC8PVDL8555sGm4hEXKM47JEPQuFY
+
   open-webui:
     image: ghcr.io/open-webui/open-webui:main
     container_name: open-webui
@@ -22,8 +35,12 @@ services:
       - OPENAI_API_KEY=AQVNx2RrvxUcrYCy_MSusS2ltrebhBVHYkqxF8mG
       - IMAGES_OPENAI_API_BASE_URL=http://yandex-proxy:8081/v1
       - IMAGES_OPENAI_API_KEY=AQVNx2RrvxUcrYCy_MSusS2ltrebhBVHYkqxF8mG
+      - AUDIO_STT_ENGINE=openai
+      - AUDIO_STT_OPENAI_API_BASE_URL=http://stt-proxy:8082/v1
+      - AUDIO_STT_OPENAI_API_KEY=unused
     depends_on:
       - yandex-proxy
+      - stt-proxy
 
 volumes:
   open-webui:
