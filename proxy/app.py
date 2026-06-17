@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import re
@@ -6,7 +7,14 @@ from typing import Optional
 import httpx
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
-from limits import enforce, get_user, limits_for, LimitError
+from limits import (
+    add_tokens,
+    check_tokens,
+    enforce,
+    get_user,
+    limits_for,
+    LimitError,
+)
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("yandex-proxy")
@@ -57,6 +65,36 @@ def _get_api_key(request: Request) -> str:
     if auth.lower().startswith("bearer "):
         return auth[7:]
     return auth
+
+
+def _extract_total_tokens(resp: httpx.Response) -> int:
+    """Extract usage.total_tokens from a buffered chat response.
+
+    Handles both JSON (non-streaming) and SSE (streaming) bodies.
+    """
+    text = resp.text
+    # Non-streaming JSON
+    if not text.lstrip().startswith("data:"):
+        try:
+            return int(resp.json().get("usage", {}).get("total_tokens", 0) or 0)
+        except Exception:
+            return 0
+    # Streaming SSE: scan data: lines for the last one carrying usage
+    total = 0
+    for line in text.splitlines():
+        line = line.strip()
+        if not line.startswith("data:"):
+            continue
+        payload = line[len("data:"):].strip()
+        if not payload or payload == "[DONE]":
+            continue
+        try:
+            usage = json.loads(payload).get("usage")
+            if usage and usage.get("total_tokens"):
+                total = int(usage["total_tokens"])
+        except Exception:
+            continue
+    return total
 
 
 def _log_user_headers(request: Request, endpoint: str):
@@ -144,11 +182,17 @@ async def proxy_passthrough(request: Request, path: str):
     """Pass through all other requests to Yandex Cloud OpenAI-compatible API."""
     _log_user_headers(request, f"passthrough:{path}")
 
-    if path.rstrip("/") == "v1/chat/completions":
-        user_id, role = get_user(request)
+    is_chat = path.rstrip("/") == "v1/chat/completions"
+    chat_user_id = chat_role = None
+    if is_chat:
+        chat_user_id, chat_role = get_user(request)
         daily, monthly = limits_for("chat")
+        t_daily, t_monthly = limits_for("chat_tokens")
         try:
-            await enforce(user_id, role, "chat", daily, monthly)
+            await enforce(chat_user_id, chat_role, "chat", daily, monthly)
+            await check_tokens(
+                chat_user_id, chat_role, "chat_tokens", t_daily, t_monthly
+            )
         except LimitError as e:
             return JSONResponse(
                 status_code=e.status_code,
@@ -161,6 +205,17 @@ async def proxy_passthrough(request: Request, path: str):
     headers.pop("host", None)
 
     body = await request.body()
+    if is_chat:
+        try:
+            parsed = json.loads(body)
+            if parsed.get("stream"):
+                opts = parsed.get("stream_options") or {}
+                opts["include_usage"] = True
+                parsed["stream_options"] = opts
+                body = json.dumps(parsed).encode()
+                headers.pop("content-length", None)
+        except Exception:
+            pass
 
     async with httpx.AsyncClient(timeout=60) as client:
         resp = await client.request(
@@ -170,6 +225,11 @@ async def proxy_passthrough(request: Request, path: str):
             content=body,
             params=request.query_params,
         )
+
+    if is_chat and resp.status_code == 200:
+        tokens = _extract_total_tokens(resp)
+        if tokens:
+            await add_tokens(chat_user_id, "chat_tokens", tokens)
 
     # Cache folder_id from models response
     if path.rstrip("/") in ("v1/models", "models"):
