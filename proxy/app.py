@@ -58,6 +58,18 @@ def _get_api_key(request: Request) -> str:
     return auth
 
 
+def _log_user_headers(request: Request, endpoint: str):
+    user_id = request.headers.get("x-openwebui-user-id")
+    user_email = request.headers.get("x-openwebui-user-email")
+    user_name = request.headers.get("x-openwebui-user-name")
+    user_role = request.headers.get("x-openwebui-user-role")
+    logger.info(
+        f"[{endpoint}] user headers: "
+        f"id={user_id!r} email={user_email!r} "
+        f"name={user_name!r} role={user_role!r}"
+    )
+
+
 def _normalize_size(size: Optional[str]) -> str:
     if not size or size not in _ALLOWED_SIZES:
         return "1024x1024"
@@ -95,6 +107,7 @@ async def _generate_image_native(api_key: str, body: dict) -> dict:
 @app.post("/v1/images/generations")
 async def images_generations(request: Request):
     """Translate OpenAI image request to Yandex native OpenAI-compatible endpoint."""
+    _log_user_headers(request, "images")
     api_key = _get_api_key(request)
     body = await request.json()
 
@@ -117,6 +130,7 @@ async def images_generations(request: Request):
 )
 async def proxy_passthrough(request: Request, path: str):
     """Pass through all other requests to Yandex Cloud OpenAI-compatible API."""
+    _log_user_headers(request, f"passthrough:{path}")
     target_url = f"{YANDEX_BASE_URL}/{path}"
 
     headers = dict(request.headers)
