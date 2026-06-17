@@ -1,12 +1,26 @@
 version: "3.8"
 
 services:
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    restart: always
+
   yandex-proxy:
     build: ./proxy
     container_name: yandex-proxy
     restart: always
     ports:
       - "8081:8081"
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - RATELIMIT_ENABLED=${RATELIMIT_ENABLED}
+      - RATELIMIT_CHAT_PER_DAY=${RATELIMIT_CHAT_PER_DAY}
+      - RATELIMIT_CHAT_PER_MONTH=${RATELIMIT_CHAT_PER_MONTH}
+      - RATELIMIT_IMAGE_PER_DAY=${RATELIMIT_IMAGE_PER_DAY}
+      - RATELIMIT_IMAGE_PER_MONTH=${RATELIMIT_IMAGE_PER_MONTH}
+    depends_on:
+      - redis
 
   stt-proxy:
     build: ./stt-proxy
@@ -20,6 +34,12 @@ services:
       - S3_BUCKET=${S3_BUCKET}
       - S3_ACCESS_KEY=${S3_ACCESS_KEY}
       - S3_SECRET_KEY=${S3_SECRET_KEY}
+      - REDIS_URL=redis://redis:6379/0
+      - RATELIMIT_ENABLED=${RATELIMIT_ENABLED}
+      - RATELIMIT_STT_PER_DAY=${RATELIMIT_STT_PER_DAY}
+      - RATELIMIT_STT_PER_MONTH=${RATELIMIT_STT_PER_MONTH}
+    depends_on:
+      - redis
 
   open-webui:
     image: ghcr.io/open-webui/open-webui:main
