@@ -6,6 +6,7 @@ from typing import Optional
 import httpx
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
+from limits import enforce, get_user, limits_for, LimitError
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("yandex-proxy")
@@ -108,6 +109,17 @@ async def _generate_image_native(api_key: str, body: dict) -> dict:
 async def images_generations(request: Request):
     """Translate OpenAI image request to Yandex native OpenAI-compatible endpoint."""
     _log_user_headers(request, "images")
+
+    user_id, role = get_user(request)
+    daily, monthly = limits_for("image")
+    try:
+        await enforce(user_id, role, "image", daily, monthly)
+    except LimitError as e:
+        return JSONResponse(
+            status_code=e.status_code,
+            content={"error": {"message": e.message}},
+        )
+
     api_key = _get_api_key(request)
     body = await request.json()
 
@@ -131,6 +143,18 @@ async def images_generations(request: Request):
 async def proxy_passthrough(request: Request, path: str):
     """Pass through all other requests to Yandex Cloud OpenAI-compatible API."""
     _log_user_headers(request, f"passthrough:{path}")
+
+    if path.rstrip("/") == "v1/chat/completions":
+        user_id, role = get_user(request)
+        daily, monthly = limits_for("chat")
+        try:
+            await enforce(user_id, role, "chat", daily, monthly)
+        except LimitError as e:
+            return JSONResponse(
+                status_code=e.status_code,
+                content={"error": {"message": e.message}},
+            )
+
     target_url = f"{YANDEX_BASE_URL}/{path}"
 
     headers = dict(request.headers)

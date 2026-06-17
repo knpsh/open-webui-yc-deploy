@@ -5,6 +5,9 @@ services:
     image: redis:7-alpine
     container_name: redis
     restart: always
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
 
   yandex-proxy:
     build: ./proxy
@@ -79,3 +82,4 @@ services:
 
 volumes:
   open-webui:
+  redis-data:
