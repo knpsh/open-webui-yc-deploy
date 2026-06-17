@@ -30,23 +30,28 @@ services:
     volumes:
       - open-webui:/app/backend/data
     environment:
-      - ENABLE_OLLAMA_API=False
-      - OPENAI_API_BASE_URL=http://yandex-proxy:8081/v1
-      - OPENAI_API_KEY=${API_KEY}
-      - IMAGES_OPENAI_API_BASE_URL=http://yandex-proxy:8081/v1
-      - IMAGES_OPENAI_API_KEY=${API_KEY}
       - AUDIO_STT_ENGINE=openai
       - AUDIO_STT_OPENAI_API_BASE_URL=http://stt-proxy:8082/v1
       - AUDIO_STT_OPENAI_API_KEY=unused
+      - ENABLE_FORWARD_USER_INFO_HEADERS=true
       - ENABLE_IMAGE_GENERATION=True
-      - IMAGE_GENERATION_ENGINE=openai
+      - ENABLE_LOGIN_FORM=false
       - ENABLE_OAUTH_SIGNUP=true
+      - ENABLE_OLLAMA_API=False
+      - ENABLE_SIGNUP=false
+      - IMAGE_GENERATION_ENGINE=openai
+      - IMAGES_OPENAI_API_BASE_URL=http://yandex-proxy:8081/v1
+      - IMAGES_OPENAI_API_KEY=${API_KEY}
       - OAUTH_CLIENT_ID=${OIDC_CLIENT_ID}
       - OAUTH_CLIENT_SECRET=${OIDC_CLIENT_SECRET}
-      - OPENID_PROVIDER_URL=${OIDC_DISCOVERY_URL}
+      - OAUTH_CODE_CHALLENGE_METHOD=S256
+      - OAUTH_EMAIL_CLAIM=preferred_username
+      - OAUTH_MERGE_ACCOUNTS_BY_EMAIL=true
       - OAUTH_PROVIDER_NAME=Yandex Identity Hub
       - OAUTH_SCOPES=openid email profile
-      - OAUTH_MERGE_ACCOUNTS_BY_EMAIL=true
+      - OPENAI_API_BASE_URL=http://yandex-proxy:8081/v1
+      - OPENAI_API_KEY=${API_KEY}
+      - OPENID_PROVIDER_URL=${OIDC_DISCOVERY_URL}
       - WEBUI_URL=http://localhost:3000
     depends_on:
       - yandex-proxy
