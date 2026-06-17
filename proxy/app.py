@@ -1,5 +1,5 @@
-import asyncio
 import logging
+import os
 import re
 from typing import Optional
 
@@ -14,8 +14,10 @@ app = FastAPI()
 
 YANDEX_BASE_URL = "https://ai.api.cloud.yandex.net"
 YANDEX_OPENAI_BASE = f"{YANDEX_BASE_URL}/v1"
-YANDEX_ART_URL = f"{YANDEX_BASE_URL}/foundationModels/v1/imageGenerationAsync"
-YANDEX_OPERATION_URL = "https://operation.api.cloud.yandex.net/operations"
+YANDEX_IMAGES_URL = f"{YANDEX_OPENAI_BASE}/images/generations"
+
+IMAGE_MODEL = os.environ.get("IMAGE_MODEL", "aliceai-image-art-3.0")
+_ALLOWED_SIZES = {"auto", "1x1", "1024x1024", "1536x1024", "1024x1536"}
 
 _folder_id: Optional[str] = None
 
@@ -56,93 +58,54 @@ def _get_api_key(request: Request) -> str:
     return auth
 
 
-async def _generate_image(api_key: str, prompt: str, size: str = "1024x1024") -> str:
-    """Call YandexART async API, poll for result, return base64 image."""
-    folder_id = await _get_folder_id(api_key)
-    model_uri = f"art://{folder_id}/yandex-art/latest"
+def _normalize_size(size: Optional[str]) -> str:
+    if not size or size not in _ALLOWED_SIZES:
+        return "1024x1024"
+    return size
 
-    from math import gcd
-    w_str, h_str = size.split("x") if "x" in size else ("1024", "1024")
-    w, h = int(w_str), int(h_str)
-    divisor = gcd(w, h)
-    width = str(w // divisor)
-    height = str(h // divisor)
 
-    if len(prompt) > 500:
-        prompt = prompt[:497] + "..."
-        logger.warning("Prompt truncated to 500 characters")
+async def _generate_image_native(api_key: str, body: dict) -> dict:
+    """Forward to the native OpenAI-compatible image endpoint, injecting model URI."""
+    requested_model = body.get("model", "")
+    if isinstance(requested_model, str) and requested_model.startswith("art://"):
+        model = requested_model
+    else:
+        folder_id = await _get_folder_id(api_key)
+        model = f"art://{folder_id}/{IMAGE_MODEL}"
 
     payload = {
-        "modelUri": model_uri,
-        "generationOptions": {
-            "seed": "0",
-            "aspectRatio": {
-                "widthRatio": width,
-                "heightRatio": height,
-            },
-        },
-        "messages": [
-            {
-                "weight": "1",
-                "text": prompt,
-            }
-        ],
+        "prompt": body.get("prompt", ""),
+        "model": model,
+        "size": _normalize_size(body.get("size")),
     }
 
     headers = {
-        "Authorization": f"Api-Key {api_key}",
+        "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
 
     async with httpx.AsyncClient(timeout=120) as client:
-        resp = await client.post(YANDEX_ART_URL, json=payload, headers=headers)
-        logger.info(f"YandexART request payload: {payload}")
-        logger.info(f"YandexART response: {resp.status_code} {resp.text}")
+        resp = await client.post(YANDEX_IMAGES_URL, json=payload, headers=headers)
+        logger.info(f"Image request payload: {payload}")
+        logger.info(f"Image response: {resp.status_code}")
         resp.raise_for_status()
-        operation = resp.json()
-        operation_id = operation["id"]
-        logger.info(f"YandexART operation started: {operation_id}")
-
-        for _ in range(60):
-            await asyncio.sleep(2)
-            poll_resp = await client.get(
-                f"{YANDEX_OPERATION_URL}/{operation_id}",
-                headers=headers,
-            )
-            poll_resp.raise_for_status()
-            result = poll_resp.json()
-
-            if result.get("done"):
-                if "error" in result:
-                    raise RuntimeError(f"YandexART error: {result['error']}")
-                image_base64 = result["response"]["image"]
-                logger.info("YandexART generation complete")
-                return image_base64
-
-        raise TimeoutError("YandexART generation timed out")
+        return resp.json()
 
 
 @app.post("/v1/images/generations")
 async def images_generations(request: Request):
-    """Translate OpenAI DALL-E format to YandexART."""
+    """Translate OpenAI image request to Yandex native OpenAI-compatible endpoint."""
     api_key = _get_api_key(request)
     body = await request.json()
 
-    prompt = body.get("prompt", "")
-    size = body.get("size", "1024x1024")
-    n = body.get("n", 1)
-
     try:
-        results = []
-        for _ in range(n):
-            b64_image = await _generate_image(api_key, prompt, size)
-            results.append({"b64_json": b64_image})
-
+        result = await _generate_image_native(api_key, body)
+        return JSONResponse(content=result)
+    except httpx.HTTPStatusError as e:
+        logger.error(f"Image generation failed: {e.response.status_code} {e.response.text}")
         return JSONResponse(
-            content={
-                "created": 0,
-                "data": results,
-            }
+            status_code=e.response.status_code,
+            content={"error": {"message": e.response.text}},
         )
     except Exception as e:
         logger.error(f"Image generation failed: {e}")
