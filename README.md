@@ -12,6 +12,7 @@ This repository contains the code allowing to run open-webui with Yandex Cloud m
 - `ai.speechkit-stt.user`
 - `ai.speechkit-tts.user`
 - `storage.editor`
+- `search-api.webSearch.user`
 
 3. Create a bucket: https://yandex.cloud/en/docs/storage/operations/buckets/create
 
@@ -24,6 +25,7 @@ This repository contains the code allowing to run open-webui with Yandex Cloud m
 - `yc.ai.imageGeneration.execute`
 - `yc.ai.foundationModels.execute`
 - `yc.ai.languageModels.execute`
+- `yc.search-api.execute`
 
 6. Fill the `docker-compose.yaml` file with:
 

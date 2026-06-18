@@ -64,6 +64,7 @@ services:
       - ENABLE_OAUTH_SIGNUP=true
       - ENABLE_OLLAMA_API=False
       - ENABLE_SIGNUP=false
+      - ENABLE_WEB_SEARCH=True
       - IMAGE_GENERATION_ENGINE=openai
       - IMAGES_OPENAI_API_BASE_URL=http://yandex-proxy:8081/v1
       - IMAGES_OPENAI_API_KEY=${API_KEY}
@@ -77,7 +78,9 @@ services:
       - OPENAI_API_BASE_URL=http://yandex-proxy:8081/v1
       - OPENAI_API_KEY=${API_KEY}
       - OPENID_PROVIDER_URL=${OIDC_DISCOVERY_URL}
+      - WEB_SEARCH_ENGINE="yandex"
       - WEBUI_URL=http://localhost:3000
+      - YANDEX_WEB_SEARCH_API_KEY=${API_KEY}
     depends_on:
       - yandex-proxy
       - stt-proxy

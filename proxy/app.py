@@ -227,7 +227,12 @@ async def proxy_passthrough(request: Request, path: str):
         )
 
     if is_chat and resp.status_code == 200:
+        logger.info(f"[chat-debug] raw resp tail: {resp.text[-600:]}")
         tokens = _extract_total_tokens(resp)
+        logger.info(
+            f"[chat-debug] user={chat_user_id} parsed_tokens={tokens} "
+            f"body_len={len(resp.content)}"
+        )
         if tokens:
             await add_tokens(chat_user_id, "chat_tokens", tokens)
 
