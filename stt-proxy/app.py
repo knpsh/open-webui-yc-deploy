@@ -7,13 +7,27 @@ from typing import Optional
 
 import boto3
 import httpx
-from fastapi import FastAPI, File, Form, UploadFile
+from fastapi import FastAPI, File, Form, Request, UploadFile
 from fastapi.responses import JSONResponse
+from limits import enforce, get_user, limits_for, LimitError
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("stt-proxy")
 
 app = FastAPI()
+
+
+def _log_user_headers(request: Request, endpoint: str):
+    user_id = request.headers.get("x-openwebui-user-id")
+    user_email = request.headers.get("x-openwebui-user-email")
+    user_name = request.headers.get("x-openwebui-user-name")
+    user_role = request.headers.get("x-openwebui-user-role")
+    logger.info(
+        f"[{endpoint}] user headers: "
+        f"id={user_id!r} email={user_email!r} "
+        f"name={user_name!r} role={user_role!r}"
+    )
+
 
 FOLDER_ID = os.environ.get("FOLDER_ID", "")
 API_KEY = os.environ.get("API_KEY", "")
@@ -184,11 +198,24 @@ async def _recognize_async(
 
 @app.post("/v1/audio/transcriptions")
 async def transcriptions(
+    request: Request,
     file: UploadFile = File(...),
     model: str = Form(default="whisper-1"),
     language: Optional[str] = Form(default=None),
 ):
     """Whisper-compatible transcription endpoint."""
+    _log_user_headers(request, "transcriptions")
+
+    user_id, role = get_user(request)
+    daily, monthly = limits_for("stt")
+    try:
+        await enforce(user_id, role, "stt", daily, monthly)
+    except LimitError as e:
+        return JSONResponse(
+            status_code=e.status_code,
+            content={"error": {"message": e.message}},
+        )
+
     s3_key = None
     try:
         file_bytes = await file.read()
